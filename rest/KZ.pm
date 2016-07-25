@@ -1,6 +1,19 @@
 package KZ;
 use Exporter 'import';
-@EXPORT = qw(login dump_json make_account make_user token id make_device make_conference make_callflow_user make_callflow_conference);
+@EXPORT = qw(
+	token name id account_id
+	dump_json
+	login
+	make_account
+	make_user
+	make_device
+	make_conference
+	make_callflow_user
+	make_callflow_conference
+	get_apps
+	enable_app_for_all
+	disable_app_for_all
+);
 use strict;
 use warnings;
 
@@ -15,6 +28,8 @@ sub host { $ENV{SERVER} || "localhost:8000" }
 sub uri ($) { sprintf("http://%s/%s", host, shift) }
 sub token ($) { shift->{auth_token} }
 sub id ($) { shift->{id} }
+sub name ($) { shift->{name} }
+sub account_id ($) { shift->{account_id} }
 
 sub headers (;$) {
 	my $auth = shift;
@@ -54,7 +69,7 @@ sub login ($$$) {
 	"verb": "PUT"
 }
 DATA
-	parse_reply $furl->put(uri "v1/user_auth", headers(), $data);
+	verbose parse_reply $furl->put(uri "v1/user_auth", headers(), $data);
 }
 
 sub make_account ($$;$) {
@@ -158,6 +173,35 @@ sub make_callflow_user ($$$$) {
 DATA
   	my $re = parse_reply $furl->put(uri "v2/accounts/$account_id/callflows", headers $auth, $data);
 	verbose $re->{data};
+}
+
+sub get_apps ($$) {
+	my ($auth, $account_id) = @_;
+	my $re = parse_reply $furl->get(uri "v2/accounts/$account_id/apps_store", headers $auth);
+	verbose $re->{data};
+}
+
+sub enable_app_for_all ($$$) {
+	my ($auth, $account_id, $app_id) = @_;
+	my $data = <<DATA;
+{
+	"data":{
+		"allowed_users":"all",
+		"users":[]
+	}
+}
+DATA
+	my $re = parse_reply $furl->put(uri "v2/accounts/$account_id/apps_store/$app_id", headers $auth, $data);
+}
+
+sub disable_app_for_all ($$$) {
+	my ($auth, $account_id, $app_id) = @_;
+	my $data = <<DATA;
+{
+	"data":{}
+}
+DATA
+	my $re = parse_reply $furl->delete(uri "v2/accounts/$account_id/apps_store/$app_id", headers $auth, $data);
 }
 
 1;
