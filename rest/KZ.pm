@@ -57,14 +57,14 @@ DATA
 	parse_reply $furl->put(uri "v1/user_auth", headers(), $data);
 }
 
-
-sub make_account ($$) {
-	my ($auth, $domain) = @_;
+sub make_account ($$;$) {
+	my ($auth, $name, $realm) = @_;
+	$realm //= $name;
 	my $data = <<DATA;
 {
 	"data":{
-		"name":"$domain",
-		"realm": "$domain"
+		"name":"$name",
+		"realm": "$realm"
 	}
 }
 DATA
