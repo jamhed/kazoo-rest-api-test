@@ -112,8 +112,10 @@ sub make_device ($$$$) {
 	"data":{
 		"name":"Desk $id",
 		"owner_id":"$owner_id", 
-		"sip.username":"sip$id",
-		"sip.password":"sip${id}pas${id}"
+		"sip": {
+			"username":"sip$id",
+			"password":"sip${id}pas${id}"
+		}
 	}
 }
 DATA
