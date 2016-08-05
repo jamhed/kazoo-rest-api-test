@@ -13,6 +13,7 @@ use Exporter 'import';
 	get_apps
 	enable_app_for_all
 	disable_app_for_all
+	get_conferences
 );
 use strict;
 use warnings;
@@ -31,9 +32,9 @@ sub id ($) { shift->{id} }
 sub name ($) { shift->{name} }
 sub account_id ($) { shift->{account_id} }
 
-sub headers (;$) {
-	my $auth = shift;
-	my $common = ["Accept" => "application/json", "Content-Type" => "application/json"];
+sub headers (;$$) {
+	my ($auth, $common) = @_;
+	$common //= ["Accept" => "application/json", "Content-Type" => "application/json"];
 	$auth? [ "X-Auth-Token" => $auth, @$common ] : $common;
 }
 
@@ -83,7 +84,7 @@ sub make_account ($$;$) {
 	}
 }
 DATA
-	my $re = parse_reply $furl->put(uri "v2/accounts", headers $auth, $data);
+	my $re = parse_reply $furl->put(uri "v2/accounts", headers($auth), $data);
 	verbose $re->{data};
 }
 
@@ -101,7 +102,7 @@ sub make_user ($$$$) {
 	}
 }
 DATA
-	my $re = parse_reply $furl->put(uri "v2/accounts/$account_id/users", headers $auth, $data);
+	my $re = parse_reply $furl->put(uri "v2/accounts/$account_id/users", headers($auth), $data);
 	verbose $re->{data};
 }
 
@@ -119,7 +120,7 @@ sub make_device ($$$$) {
 	}
 }
 DATA
-  	my $re = parse_reply $furl->put(uri "v2/accounts/$account_id/devices", headers $auth, $data);
+  	my $re = parse_reply $furl->put(uri "v2/accounts/$account_id/devices", headers($auth), $data);
 	verbose $re->{data};
 }
 
@@ -133,7 +134,13 @@ sub make_conference ($$$$) {
 	}
 } 
 DATA
-  	my $re = parse_reply $furl->put(uri "v2/accounts/$account_id/conferences", headers $auth, $data);
+  	my $re = parse_reply $furl->put(uri "v2/accounts/$account_id/conferences", headers($auth), $data);
+	verbose $re->{data};
+}
+
+sub get_conferences ($$) {
+	my ($auth, $account_id) = @_;
+  	my $re = parse_reply $furl->get(uri "v2/accounts/$account_id/conferences", headers($auth));
 	verbose $re->{data};
 }
 
@@ -152,7 +159,7 @@ sub make_callflow_conference ($$$$) {
 	}
 }
 DATA
-  	my $re = parse_reply $furl->put(uri "v2/accounts/$account_id/callflows", headers $auth, $data);
+  	my $re = parse_reply $furl->put(uri "v2/accounts/$account_id/callflows", headers($auth), $data);
 	verbose $re->{data};
 }
 
@@ -173,13 +180,13 @@ sub make_callflow_user ($$$$) {
 	}
 }
 DATA
-  	my $re = parse_reply $furl->put(uri "v2/accounts/$account_id/callflows", headers $auth, $data);
+  	my $re = parse_reply $furl->put(uri "v2/accounts/$account_id/callflows", headers($auth), $data);
 	verbose $re->{data};
 }
 
 sub get_apps ($$) {
 	my ($auth, $account_id) = @_;
-	my $re = parse_reply $furl->get(uri "v2/accounts/$account_id/apps_store", headers $auth);
+	my $re = parse_reply $furl->get(uri "v2/accounts/$account_id/apps_store", headers($auth));
 	verbose $re->{data};
 }
 
@@ -193,7 +200,7 @@ sub enable_app_for_all ($$$) {
 	}
 }
 DATA
-	my $re = parse_reply $furl->put(uri "v2/accounts/$account_id/apps_store/$app_id", headers $auth, $data);
+	my $re = parse_reply $furl->put(uri "v2/accounts/$account_id/apps_store/$app_id", headers($auth), $data);
 }
 
 sub disable_app_for_all ($$$) {
@@ -203,7 +210,12 @@ sub disable_app_for_all ($$$) {
 	"data":{}
 }
 DATA
-	my $re = parse_reply $furl->delete(uri "v2/accounts/$account_id/apps_store/$app_id", headers $auth, $data);
+	my $re = parse_reply $furl->delete(uri "v2/accounts/$account_id/apps_store/$app_id", headers($auth), $data);
+}
+
+sub send_fax {
+	my ($account_id, $auth) = @_;
+	$furl->put(uri "v2/accounts/$account_id/faxes", headers($auth, [ "Content-Type" => "multipart/mixed" ]));
 }
 
 1;

@@ -1,7 +1,7 @@
 #!/bin/sh
 LOGIN=${1:-admin}
 PASS=${2:-admin}
-ACCOUNT_NAME=${3:-admin_name}
+ACCOUNT_NAME=${3:-admin}
 HOST=${4:-localhost}
 echo $LOGIN:$PASS
 AUTH=$(echo -n $LOGIN:$PASS | md5sum | cut -f 1 -d " ")
