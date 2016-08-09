@@ -14,6 +14,13 @@ use Exporter 'import';
 	enable_app_for_all
 	disable_app_for_all
 	get_conferences
+	get_groups
+	get_users
+	get_devices
+	get_callflows
+	make_group
+	add_spare_number
+	update_callflow
 );
 use strict;
 use warnings;
@@ -21,12 +28,17 @@ use warnings;
 use Furl;
 use JSON;
 use Digest::MD5 qw(md5_hex);
+use IO::Socket::SSL;
+use URI::Escape qw(uri_escape);
 
 our $verbose = 0;
-our $furl = Furl->new();
+our $furl = Furl->new(
+	ssl_opts => {
+		SSL_verify_mode => SSL_VERIFY_NONE, # SSL_VERIFY_PEER(),
+	});
 
-sub host { $ENV{SERVER} || "localhost:8000" }
-sub uri ($) { sprintf("http://%s/%s", host, shift) }
+sub host { $ENV{SERVER} || "http://localhost:8000" }
+sub uri ($) { sprintf("%s/%s", host, shift) }
 sub token ($) { shift->{auth_token} }
 sub id ($) { shift->{id} }
 sub name ($) { shift->{name} }
@@ -216,6 +228,76 @@ DATA
 sub send_fax {
 	my ($account_id, $auth) = @_;
 	$furl->put(uri "v2/accounts/$account_id/faxes", headers($auth, [ "Content-Type" => "multipart/mixed" ]));
+}
+
+sub get_groups ($$) {
+	my ($auth, $account_id) = @_;
+	my $re = parse_reply $furl->get(uri "v2/accounts/$account_id/groups", headers($auth));
+	verbose $re->{data};
+}
+
+sub get_users ($$) {
+	my ($auth, $account_id) = @_;
+	my $re = parse_reply $furl->get(uri "v2/accounts/$account_id/users", headers($auth));
+	verbose $re->{data};
+}
+
+sub get_devices ($$) {
+	my ($auth, $account_id) = @_;
+	my $re = parse_reply $furl->get(uri "v2/accounts/$account_id/devices", headers($auth));
+	verbose $re->{data};
+}
+
+sub make_group ($$$) {
+	my ($auth, $account_id, $user_id) = @_;
+	my $data = <<DATA;
+{
+	"data": {
+		"name": "Test group",
+		"endpoints": {
+			"$user_id": {
+				"type": "user",
+				"weight": 1
+			}
+		}
+	}
+}
+DATA
+  	my $re = parse_reply $furl->put(uri "v2/accounts/$account_id/groups", headers($auth), $data);
+	verbose $re->{data};
+}
+
+sub add_spare_number ($$$) {
+	my ($auth, $account_id, $number) = @_;
+	my $escape = uri_escape($number);
+	my $data = <<DATA;
+{
+	"data": {
+	}
+}
+DATA
+	verbose parse_reply $furl->put(uri "v2/accounts/$account_id/phone_numbers/$escape", headers($auth), $data);
+}
+
+sub get_callflows ($$) {
+	my ($auth, $account_id) = @_;
+	my $re = parse_reply $furl->get(uri "v2/accounts/$account_id/callflows", headers($auth));
+	verbose $re->{data};
+}
+
+sub get_callflow ($$$) {
+	my ($auth, $account_id, $callflow_id) = @_;
+	my $re = parse_reply $furl->get(uri "v2/accounts/$account_id/callflows/$callflow_id", headers($auth));
+	verbose $re->{data};
+}
+
+
+sub update_callflow ($$$) {
+	my ($auth, $account_id, $cf) = @_;
+	my $callflow_id = $cf->{id};
+	my $data = to_json({ data => $cf });
+  	my $re = parse_reply $furl->post(uri "v2/accounts/$account_id/callflows/$callflow_id", headers($auth), $data);
+	verbose $re->{data};
 }
 
 1;
